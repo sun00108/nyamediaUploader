@@ -17,6 +17,7 @@
 从 GitHub Releases 下载对应平台的压缩包：
 
 - `nyaupload-darwin-arm64.zip`
+- `nyaupload-darwin-amd64.zip`
 - `nyaupload-linux-amd64.zip`
 - `nyaupload-linux-armv7.zip`
 - `nyaupload-windows-amd64.zip`

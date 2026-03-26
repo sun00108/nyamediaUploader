@@ -25,6 +25,10 @@ jobs:
             goarch: arm64
             artifact_name: nyaupload-darwin-arm64
             binary_name: nyaupload
+          - goos: darwin
+            goarch: amd64
+            artifact_name: nyaupload-darwin-amd64
+            binary_name: nyaupload
           - goos: linux
             goarch: amd64
             artifact_name: nyaupload-linux-amd64
