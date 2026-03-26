@@ -58,8 +58,6 @@ func (a *App) Run(ctx context.Context, args []string) error {
 		return a.runRequest(ctx, args[1:])
 	case "upload":
 		return a.runUpload(ctx, args[1:])
-	case "test-upload-url":
-		return a.runTestUploadURL(ctx, args[1:])
 	case "help", "-h", "--help":
 		a.printHelp()
 		return nil
@@ -278,76 +276,6 @@ func (a *App) runUpload(ctx context.Context, args []string) error {
 	return nil
 }
 
-func (a *App) runTestUploadURL(ctx context.Context, args []string) error {
-	fs := flag.NewFlagSet("test-upload-url", flag.ContinueOnError)
-	fs.SetOutput(a.stderr)
-
-	var path string
-	var name string
-	var localFile string
-	var conflictBehavior string
-
-	fs.StringVar(&path, "path", "", "target OneDrive path")
-	fs.StringVar(&name, "name", "", "file name")
-	fs.StringVar(&localFile, "file", "", "local file path")
-	fs.StringVar(&conflictBehavior, "conflict-behavior", "replace", "replace, rename, or fail")
-
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
-
-	if path == "" {
-		return errors.New("missing required flag: --path")
-	}
-	if localFile == "" {
-		return errors.New("missing required flag: --file")
-	}
-	if name == "" {
-		name = filepath.Base(path)
-	}
-
-	info, err := os.Stat(localFile)
-	if err != nil {
-		return fmt.Errorf("stat local file %s: %w", localFile, err)
-	}
-	if info.IsDir() {
-		return fmt.Errorf("local file %s is a directory", localFile)
-	}
-	size := info.Size()
-	if size <= 0 {
-		return fmt.Errorf("local file %s is empty", localFile)
-	}
-
-	session, err := a.auth.LoadSession(ctx)
-	if err != nil {
-		if errors.Is(err, auth.ErrSessionNotFound) {
-			return errors.New("not logged in, run `nyaupload login` first")
-		}
-		return err
-	}
-	if !session.IsValidAt(auth.Now()) {
-		return errors.New("local session is expired, run `nyaupload login` again")
-	}
-
-	resp, err := a.od.CreateUploadSession(ctx, session.AccessToken, onedrive.CreateUploadSessionInput{
-		Path:             path,
-		FileName:         name,
-		FileSize:         size,
-		ConflictBehavior: conflictBehavior,
-	})
-	if err != nil {
-		return err
-	}
-
-	fmt.Fprintln(a.stdout, "Upload session created.")
-	fmt.Fprintf(a.stdout, "Local File: %s\n", localFile)
-	fmt.Fprintf(a.stdout, "File Size: %d\n", size)
-	fmt.Fprintf(a.stdout, "Path: %s\n", path)
-	fmt.Fprintf(a.stdout, "Upload URL: %s\n", resp.UploadURL)
-	fmt.Fprintf(a.stdout, "Expires At: %s\n", resp.ExpirationDateTime)
-	return nil
-}
-
 func (a *App) requireSession(ctx context.Context) (*auth.Session, error) {
 	session, err := a.auth.LoadSession(ctx)
 	if err != nil {
@@ -397,7 +325,6 @@ func (a *App) printHelp() {
 	fmt.Fprintln(a.stdout, "  nyaupload logout")
 	fmt.Fprintln(a.stdout, "  nyaupload request --request-id 123 [--season 1 --episode 2]")
 	fmt.Fprintln(a.stdout, "  nyaupload upload ./movie.mkv")
-	fmt.Fprintln(a.stdout, "  nyaupload test-upload-url --file ./movie.mkv --path /Uploads/demo/movie.mkv")
 	fmt.Fprintln(a.stdout)
 	fmt.Fprintln(a.stdout, "Environment overrides:")
 	fmt.Fprintln(a.stdout, "  NYAUPLOAD_BOT_PUBLIC_BASE_URL")

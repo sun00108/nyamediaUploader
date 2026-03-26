@@ -17,7 +17,6 @@ type Client struct {
 }
 
 type CreateUploadSessionInput struct {
-	Path             string `json:"path,omitempty"`
 	FileName         string `json:"file_name,omitempty"`
 	FileSize         int64  `json:"file_size"`
 	ConflictBehavior string `json:"conflict_behavior,omitempty"`
@@ -45,9 +44,9 @@ func (c *Client) CreateUploadSession(ctx context.Context, accessToken string, in
 		return nil, err
 	}
 
-	endpoint := c.baseURL + "/api/onedrive/upload-sessions"
-	if input.RequestCode != "" {
-		endpoint = c.baseURL + "/api/media/upload-sessions"
+	endpoint := c.baseURL + "/api/media/upload-sessions"
+	if input.RequestCode == "" {
+		return nil, fmt.Errorf("create upload session failed: missing request_code")
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
